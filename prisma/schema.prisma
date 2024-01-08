@@ -1,0 +1,145 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model authUser {
+  id                String          @id @default(uuid())
+  username          String          @unique
+  password          String
+  email             String          @unique
+  role              Role            @default(Customer)
+  is_verify_phone   Boolean?
+  verify_phone_code String?
+  created_at        DateTime?       @default(now())
+  updated_at        DateTime?
+  updated_by        String?
+  deleted_at        DateTime?
+  deleted_by        String?
+  UserProfile       userProfile?    @relation("UserProfile")
+  whatsappDevice    whatsappDevice? @relation("WhatsappDevice")
+}
+
+model userProfile {
+  id            String         @id @default(uuid())
+  user_id       String         @unique
+  full_name     String
+  phone_number  String         @unique
+  gender        Gender
+  created_at    DateTime?      @default(now())
+  updated_at    DateTime?
+  updated_by    String?
+  deleted_at    DateTime?
+  deleted_by    String?
+  authUser      authUser       @relation("UserProfile", fields: [user_id], references: [id])
+  notifications notification[] @relation("Notification")
+}
+
+model whatsappDevice {
+  id         String    @id @default(uuid())
+  user_id    String    @unique
+  session_id String    @unique
+  created_at DateTime? @default(now())
+  updated_at DateTime?
+  updated_by String?
+  deleted_at DateTime?
+  deleted_by String?
+  authUser   authUser  @relation("WhatsappDevice", fields: [user_id], references: [id])
+}
+
+model notification {
+  id             String      @id @default(uuid())
+  message        String      @db.Text
+  receiver_id    String
+  is_scheduled   Boolean
+  scheduled_date DateTime
+  created_at     DateTime?   @default(now())
+  updated_at     DateTime?
+  updated_by     String?
+  deleted_at     DateTime?
+  deleted_by     String?
+  receiver       userProfile @relation("Notification", fields: [receiver_id], references: [id])
+}
+
+model serviceType {
+  id         String     @id @default(uuid())
+  name       String
+  unit       Unit
+  created_at DateTime?  @default(now())
+  updated_at DateTime?
+  updated_by String?
+  deleted_at DateTime?
+  deleted_by String?
+  item       itemType[] @relation("Service")
+}
+
+model itemType {
+  id           String        @id @default(uuid())
+  service_id   String
+  name         String
+  price        Int
+  created_at   DateTime?     @default(now())
+  updated_at   DateTime?
+  updated_by   String?
+  deleted_at   DateTime?
+  deleted_by   String?
+  service_type serviceType   @relation("Service", fields: [service_id], references: [id])
+  detailOrder  detailOrder[] @relation("Items")
+}
+
+model orders {
+  id            String        @id @default(uuid())
+  bill_no       String
+  user_id       String
+  status        Status
+  date_received DateTime
+  date_pickup   DateTime
+  total         BigInt
+  created_at    DateTime?     @default(now())
+  updated_at    DateTime?
+  updated_by    String?
+  deleted_at    DateTime?
+  deleted_by    String?
+  detailOrder   detailOrder[] @relation("Orders")
+}
+
+model detailOrder {
+  id           String    @id @default(uuid())
+  order_id     String
+  item_id      String
+  quantity     Int
+  total_price  BigInt
+  created_at   DateTime? @default(now())
+  updated_at   DateTime?
+  updated_by   String?
+  deleted_at   DateTime?
+  deleted_by   String?
+  orders       orders    @relation("Orders", fields: [order_id], references: [id])
+  item_type_id itemType  @relation("Items", fields: [item_id], references: [id])
+}
+
+enum Status {
+  RECEIVED
+  PROCESS
+  FINISH
+  COMPLETED
+}
+
+enum Unit {
+  Kg
+  Pcs
+}
+
+enum Gender {
+  MALE
+  FEMALE
+}
+
+enum Role {
+  Admin
+  Customer
+}
