@@ -13,6 +13,7 @@ import {
   WRONG_CREDENTIALS,
   ERORR_PASSWORD_LENGTH,
   USER_NOT_ACTIVE,
+  DUPLICATE_PASSWORD,
 } from 'src/helpers/constants/response.constants';
 // import axios from 'axios';
 import { createWriteStream } from 'fs';
@@ -69,13 +70,14 @@ export class AuthService {
     //ToDo initialize whatsapp
     try {
       const auth = {
-        profile_id: profile.id, 
+        id: user.id,
+        profile_id: profile.id,
         name: profile.full_name,
         username: user.username,
         email: user.email,
         phone_number: profile.phone_number,
         role: user.role,
-        is_verify: user.is_verify_phone
+        is_verify: user.is_verify_phone,
       };
       const token = await this.JWTService.sign(auth);
       return {
@@ -136,7 +138,7 @@ export class AuthService {
             UserProfile: {
               create: {
                 full_name: credentials.full_name,
-                phone_number: "62" + credentials.phone_number,
+                phone_number: '62' + credentials.phone_number,
                 gender: credentials.gender,
               },
             },
@@ -225,7 +227,73 @@ export class AuthService {
   // }
 
   async verifyToken(user: any): Promise<any> {
-    return user
+    return user;
+  }
+
+  async updateProfile(user: any, EditProfileDto: EditProfileDto): Promise<any> {
+    const salt = await bcrypt.genSalt(+process.env.SALT_ROUNDS);
+    const checkUser = await this.prisma.authUser.findFirst({
+      where: {
+        id: user.id,
+      },
+      include: {
+        UserProfile: true,
+      },
+    });
+
+    if (!checkUser) {
+      throw new BadRequestException(USER_NOT_FOUND);
+    }
+
+    let data_updated = {
+      password: checkUser.password,
+      username: EditProfileDto.username,
+      email: EditProfileDto.email,
+      UserProfile: {
+        update: {
+          full_name: EditProfileDto.full_name,
+          phone_number: EditProfileDto.phone_number,
+        },
+      },
+    };
+
+    if (EditProfileDto.current_password) {
+      const isPasswordValid = await bcrypt.compare(
+        EditProfileDto.current_password,
+        checkUser.password,
+      );
+
+      const isDuplicatePassword = await bcrypt.compare(
+        EditProfileDto.new_password,
+        checkUser.password,
+      );
+
+      if (isDuplicatePassword) {
+        throw new BadRequestException(DUPLICATE_PASSWORD);
+      }
+
+      if (!isPasswordValid) {
+        throw new BadRequestException(WRONG_CREDENTIALS);
+      }
+
+      data_updated.password = await bcrypt.hash(
+        EditProfileDto.new_password,
+        salt,
+      );
+    }
+
+    await this.prisma.$transaction([
+      this.prisma.authUser.update({
+        where: { id: user.id },
+        data: data_updated,
+      }),
+    ]);
+
+    return {
+      username: EditProfileDto.username,
+      email: user.email,
+      full_name: EditProfileDto.full_name,
+    };
   }
 
   // async getProfile(user: any): Promise<any> {
@@ -248,100 +316,6 @@ export class AuthService {
   //     file_name: profile.file_name,
   //     role: role.name,
   //     phone_number: profile.phone_number,
-  //   };
-  // }
-
-  // async updateProfile(
-  //   id_user: string,
-  //   user: any,
-  //   EditProfileDto: EditProfileDto,
-  // ): Promise<any> {
-  //   const salt = await bcrypt.genSalt(+process.env.SALT_ROUNDS);
-
-  //   const checkUser = await this.prisma.authUser.findFirst({
-  //     where: {
-  //       id: user.id,
-  //     },
-  //     include: {
-  //       UserProfile: true,
-  //     },
-  //   });
-
-  //   if (!checkUser) {
-  //     throw new BadRequestException(USER_NOT_FOUND);
-  //   }
-  //   if (EditProfileDto.current_password) {
-  //     const isPasswordValid = await bcrypt.compare(
-  //       EditProfileDto.current_password,
-  //       checkUser.password,
-  //     );
-
-  //     if (!isPasswordValid) {
-  //       throw new BadRequestException(WRONG_CREDENTIALS);
-  //     }
-  //   }
-
-  //   let filePath = null,
-  //     fileName = null,
-  //     fileType = null,
-  //     base64Data = null;
-  //   if (EditProfileDto.image || EditProfileDto.image != '') {
-  //     const matches = EditProfileDto.image.match(
-  //       /^data:image\/([A-Za-z-+/]+);base64,(.+)$/,
-  //     );
-  //     // if (!matches || matches.length !== 3) {
-  //     //   return { error: 'Invalid data URI format' };
-  //     // }
-  //     if (matches) {
-  //       [, fileType, base64Data] = matches;
-  //       const buffer = Buffer.from(base64Data, 'base64');
-  //       fileName = `${EditProfileDto.username}.${fileType}`;
-  //       filePath = `${this.publicStoragePath}/${fileName}`;
-  //       try {
-  //         const upload = await this.storageService.uploadFile(filePath, buffer);
-  //       } catch (error) {
-  //         throw new Error('Create failed: ' + error.message);
-  //       }
-  //     } else {
-  //       filePath = checkUser.UserProfile.file_path;
-  //       fileName = checkUser.UserProfile.file_name;
-  //       fileType = checkUser.UserProfile.file_type;
-  //     }
-  //   } else {
-  //     filePath = checkUser.UserProfile.file_path;
-  //     fileName = checkUser.UserProfile.file_name;
-  //     fileType = checkUser.UserProfile.file_type;
-  //   }
-
-  //   const new_password =
-  //     EditProfileDto.new_password ||
-  //     EditProfileDto.new_password != '' ||
-  //     EditProfileDto.new_password != ''
-  //       ? await bcrypt.hash(EditProfileDto.new_password, salt)
-  //       : checkUser.password;
-  //   const userEdit = await this.prisma.authUser.update({
-  //     where: { id: user.id },
-  //     data: {
-  //       password: new_password,
-  //       username: EditProfileDto.username,
-  //       email: EditProfileDto.email,
-  //       UserProfile: {
-  //         update: {
-  //           full_name: EditProfileDto.full_name,
-  //           phone_number: EditProfileDto.phone_number,
-  //           phone_number_whatsapp: EditProfileDto.phone_number,
-  //           file_name: `${fileName}`,
-  //           file_path: `${filePath}`,
-  //           file_type: `${fileType}`,
-  //         },
-  //       },
-  //     },
-  //   });
-
-  //   return {
-  //     username: EditProfileDto.username,
-  //     email: user.email,
-  //     full_name: EditProfileDto.full_name,
   //   };
   // }
 

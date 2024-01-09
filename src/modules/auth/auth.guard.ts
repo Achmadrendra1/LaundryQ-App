@@ -71,7 +71,7 @@ export class AuthRoleAdmin implements CanActivate {
     const decodedToken: any = jwt.decode(token);
 
     try {
-      if (decodedToken.roleName === 'Admin') {
+      if (decodedToken.role === 'Admin') {
         return true;
       } else {
         return false;

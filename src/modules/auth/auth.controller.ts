@@ -15,6 +15,7 @@ import {
   Res,
   Request,
   InternalServerErrorException,
+  Put,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { LoginDto, RegisterDto, PhoneVerificationDto } from './dto';
@@ -33,7 +34,6 @@ import * as fs from 'fs';
 import { join } from 'path';
 // import { QuestionService } from '../question/question.service';
 
-// @ApiBearerAuth()
 @ApiTags('Auth User')
 @Controller('auth')
 export class AuthController {
@@ -62,10 +62,21 @@ export class AuthController {
   //   return this.authService.emailVerifyGetToken(EmailVerificationDto);
   // }
 
+  @ApiBearerAuth()
   @Get('verify/token/')
   @HttpCode(200)
   verifyToken(@Request() req) {
     return this.authService.verifyToken(req.user);
+  }
+
+  @ApiBearerAuth()
+  @Put('profile')
+  @HttpCode(200)
+  updateProfile(@Request() req, @Body() EditProfileDto: EditProfileDto) {
+    return this.authService.updateProfile(
+      req.user,
+      EditProfileDto,
+    );
   }
 
   // @Public()

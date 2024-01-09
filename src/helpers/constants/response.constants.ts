@@ -1,4 +1,6 @@
 export const WRONG_CREDENTIALS = 'Wrong Credentials';
+export const DUPLICATE_PASSWORD = 'Password must be different from previous password';
+export const UNAUTHORIZED_ROLE = "You are not authorized to perform this action"
 
 export const LOGIN = 'Successfully Logged In';
 export const REGISTER = 'Successfully Registered';

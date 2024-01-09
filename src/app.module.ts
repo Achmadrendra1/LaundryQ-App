@@ -6,6 +6,9 @@ import { GlobalModule } from './modules/global.modules';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule } from '@nestjs/config';
 import { ResponseInterceptor } from './helpers/interceptors/response.interceptor';
+import { BullModule } from '@nestjs/bullmq';
+import { BullBoardModule } from '@bull-board/nestjs';
+import { ExpressAdapter } from '@bull-board/express';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -18,6 +21,18 @@ import { ResponseInterceptor } from './helpers/interceptors/response.interceptor
       signOptions: {
         expiresIn: process.env.JWT_EXPIRES_IN,
       },
+    }),
+    BullModule.forRoot({
+      connection: {
+        host: 'localhost',
+        port: 6379,
+        username: 'default',
+        password: '',
+      },
+    }),
+    BullBoardModule.forRoot({
+      route: '/queues',
+      adapter: ExpressAdapter,
     }),
     GlobalModule,
   ],

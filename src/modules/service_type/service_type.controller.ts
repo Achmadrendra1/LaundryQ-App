@@ -6,20 +6,25 @@ import {
   Patch,
   Param,
   Delete,
+  Req,
+  UseGuards,
 } from '@nestjs/common';
 import { ServiceTypeService } from './service_type.service';
 import { CreateServiceTypeDto } from './dto/create-service_type.dto';
 import { UpdateServiceTypeDto } from './dto/update-service_type.dto';
-import { ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { AuthRoleAdmin } from '../auth/auth.guard';
 
+@ApiBearerAuth()
+@UseGuards(AuthRoleAdmin)
 @ApiTags('Service Type')
 @Controller('service-type')
 export class ServiceTypeController {
   constructor(private readonly serviceTypeService: ServiceTypeService) {}
 
   @Post()
-  create(@Body() createServiceTypeDto: CreateServiceTypeDto) {
-    return this.serviceTypeService.create(createServiceTypeDto);
+  create(@Req() req, @Body() createServiceTypeDto: CreateServiceTypeDto) {
+    return this.serviceTypeService.create(req.user, createServiceTypeDto);
   }
 
   @Get()
@@ -29,7 +34,7 @@ export class ServiceTypeController {
 
   @Get(':id')
   findOne(@Param('id') id: string) {
-    return this.serviceTypeService.findOne(+id);
+    return this.serviceTypeService.findOne(id);
   }
 
   @Patch(':id')
@@ -37,11 +42,11 @@ export class ServiceTypeController {
     @Param('id') id: string,
     @Body() updateServiceTypeDto: UpdateServiceTypeDto,
   ) {
-    return this.serviceTypeService.update(+id, updateServiceTypeDto);
+    return this.serviceTypeService.update(id, updateServiceTypeDto);
   }
 
   @Delete(':id')
   remove(@Param('id') id: string) {
-    return this.serviceTypeService.remove(+id);
+    return this.serviceTypeService.remove(id);
   }
 }

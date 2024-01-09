@@ -7,7 +7,7 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   app.enableCors();
   app.use(bodyParser.json({ limit: '50mb' }));
-  app.setGlobalPrefix('v1');
+  app.setGlobalPrefix('/v1');
 
   const config = new DocumentBuilder()
     .addBearerAuth()
@@ -23,6 +23,7 @@ async function bootstrap() {
   await app.listen(port, () => {
     console.log(`Server started on port : ${port}`);
     console.log(`Docs started on http://localhost:${port}/docs`);
+    console.log(`Bull Board started on http://localhost:${port}/v1/queues`);
   });
 }
 bootstrap();

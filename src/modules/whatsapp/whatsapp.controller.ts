@@ -12,12 +12,16 @@ import { CreateWhatsappDto } from './dto/create-whatsapp.dto';
 import { UpdateWhatsappDto } from './dto/update-whatsapp.dto';
 import { Public } from 'src/helpers/decorators/public.decorator';
 import { ApiTags } from '@nestjs/swagger';
+import { BullBoardInstance, InjectBullBoard } from '@bull-board/nestjs';
 
 @Public()
 @ApiTags('Whatsapp Gateway')
 @Controller('whatsapp')
 export class WhatsappController {
-  constructor(private readonly whatsappService: WhatsappService) {}
+  constructor(
+    private readonly whatsappService: WhatsappService,
+    @InjectBullBoard() private readonly boardInstance: BullBoardInstance,
+  ) {}
 
   @Post()
   create(@Body() createWhatsappDto: CreateWhatsappDto) {
