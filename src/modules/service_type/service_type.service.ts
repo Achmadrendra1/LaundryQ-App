@@ -3,55 +3,81 @@ import {
   HttpException,
   HttpStatus,
   Injectable,
-  UnauthorizedException,
 } from '@nestjs/common';
 import { CreateServiceTypeDto } from './dto/create-service_type.dto';
 import { UpdateServiceTypeDto } from './dto/update-service_type.dto';
-import { UNAUTHORIZED_ROLE } from 'src/helpers/constants/response.constants';
 import { PrismaService } from 'src/helpers/services/prisma.service';
+import { NotFoundException } from 'src/helpers/constants/custom.exceptions';
+import {
+  SERVICE_EXISTS,
+  SERVICE_NOT_FOUND,
+} from 'src/helpers/constants/response.constants';
 
 @Injectable()
 export class ServiceTypeService {
   constructor(private prisma: PrismaService) {}
-  async create(user: any, createServiceTypeDto: CreateServiceTypeDto) {
-    if (user.role !== 'Admin') {
-      throw new UnauthorizedException(UNAUTHORIZED_ROLE);
+
+  async create(createServiceTypeDto: CreateServiceTypeDto) {
+    try {
+      return await this.prisma.$transaction([
+        this.prisma.serviceType.create({
+          data: {
+            name: createServiceTypeDto.name,
+            unit: createServiceTypeDto.unit,
+          },
+        }),
+      ]);
+    } catch (err) {
+      if (err.code === 'P2002') {
+        throw new BadRequestException(SERVICE_EXISTS);
+      }
+      throw new HttpException(err.message, HttpStatus.INTERNAL_SERVER_ERROR);
     }
+  }
 
-    const serviceType = await this.prisma.serviceType.findFirst({
-      where: {
-        name: createServiceTypeDto.name,
-      },
-    });
+  async findAll() {
+    return await this.prisma.serviceType.findMany();
+  }
 
-    if (serviceType) {
-      throw new BadRequestException('Service Type already exists');
+  async findOne(id: string) {
+    try {
+      return await this.prisma.serviceType.findUniqueOrThrow({
+        where: { id },
+      });
+    } catch (err) {
+      if (err.code === 'P2025') {
+        throw new NotFoundException(SERVICE_NOT_FOUND);
+      }
+      throw new HttpException(err.message, HttpStatus.INTERNAL_SERVER_ERROR);
     }
-
-    await this.prisma.$transaction([
-      this.prisma.serviceType.create({
-        data: {
-          name: createServiceTypeDto.name,
-          unit: createServiceTypeDto.unit,
-        },
-      }),
-    ]);
-    return { ...createServiceTypeDto };
   }
 
-  findAll() {
-    return this.prisma.serviceType.findMany();
+  async update(id: string, updateServiceTypeDto: UpdateServiceTypeDto) {
+    try {
+      return await this.prisma.$transaction([
+        this.prisma.serviceType.update({
+          where: { id },
+          data: updateServiceTypeDto,
+        }),
+      ]);
+    } catch (err) {
+      if (err.code === 'P2025') {
+        throw new NotFoundException(SERVICE_NOT_FOUND);
+      }
+      throw new HttpException(err.message, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
   }
 
-  findOne(id: string) {
-    return `This action returns a #${id} serviceType`;
-  }
-
-  update(id: string, updateServiceTypeDto: UpdateServiceTypeDto) {
-    return `This action updates a #${id} serviceType`;
-  }
-
-  remove(id: string) {
-    return `This action removes a #${id} serviceType`;
+  async remove(id: string) {
+    try {
+      return await this.prisma.$transaction([
+        this.prisma.serviceType.delete({ where: { id } }),
+      ]);
+    } catch (err) {
+      if (err.code === 'P2025') {
+        throw new NotFoundException(SERVICE_NOT_FOUND);
+      }
+      throw new HttpException(err.message, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
   }
 }

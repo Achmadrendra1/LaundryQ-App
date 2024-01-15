@@ -1,5 +1,6 @@
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
+  previewFeatures = ["views"]
 }
 
 datasource db {
@@ -16,10 +17,9 @@ model authUser {
   is_verify_phone   Boolean?
   verify_phone_code String?
   created_at        DateTime?       @default(now())
+  created_by        String?         @default("System")
   updated_at        DateTime?
   updated_by        String?
-  deleted_at        DateTime?
-  deleted_by        String?
   UserProfile       userProfile?    @relation("UserProfile")
   whatsappDevice    whatsappDevice? @relation("WhatsappDevice")
 }
@@ -31,10 +31,9 @@ model userProfile {
   phone_number  String         @unique
   gender        Gender
   created_at    DateTime?      @default(now())
+  created_by    String?        @default("System")
   updated_at    DateTime?
   updated_by    String?
-  deleted_at    DateTime?
-  deleted_by    String?
   authUser      authUser       @relation("UserProfile", fields: [user_id], references: [id])
   notifications notification[] @relation("Notification")
 }
@@ -44,10 +43,9 @@ model whatsappDevice {
   user_id    String    @unique
   session_id String    @unique
   created_at DateTime? @default(now())
+  created_by String?   @default("System")
   updated_at DateTime?
   updated_by String?
-  deleted_at DateTime?
-  deleted_by String?
   authUser   authUser  @relation("WhatsappDevice", fields: [user_id], references: [id])
 }
 
@@ -58,53 +56,76 @@ model notification {
   is_scheduled   Boolean
   scheduled_date DateTime
   created_at     DateTime?   @default(now())
+  created_by     String?     @default("System")
   updated_at     DateTime?
   updated_by     String?
-  deleted_at     DateTime?
-  deleted_by     String?
   receiver       userProfile @relation("Notification", fields: [receiver_id], references: [id])
 }
 
 model serviceType {
   id         String     @id @default(uuid())
-  name       String
+  name       String     @unique
   unit       Unit
   created_at DateTime?  @default(now())
+  created_by String?    @default("System")
   updated_at DateTime?
   updated_by String?
-  deleted_at DateTime?
-  deleted_by String?
   item       itemType[] @relation("Service")
 }
 
 model itemType {
   id           String        @id @default(uuid())
   service_id   String
-  name         String
+  name         String        @unique
   price        Int
   created_at   DateTime?     @default(now())
+  created_by   String?       @default("System")
   updated_at   DateTime?
   updated_by   String?
-  deleted_at   DateTime?
-  deleted_by   String?
   service_type serviceType   @relation("Service", fields: [service_id], references: [id])
   detailOrder  detailOrder[] @relation("Items")
 }
 
+model paymentService {
+  id              String      @id @default(uuid())
+  name            String
+  account_number  String      @unique
+  payment_type_id String
+  created_at      DateTime?   @default(now())
+  created_by      String?     @default("System")
+  updated_at      DateTime?
+  updated_by      String?
+  payment_type    paymentType @relation("Payment_ACC", fields: [payment_type_id], references: [id])
+  orders          orders[]    @relation("Order_Payment")
+}
+
+model paymentType {
+  id              String           @id @default(uuid())
+  name            String           @unique
+  created_at      DateTime?        @default(now())
+  created_by      String?          @default("System")
+  updated_at      DateTime?
+  updated_by      String?
+  payment_service paymentService[] @relation("Payment_ACC")
+}
+
 model orders {
-  id            String        @id @default(uuid())
-  bill_no       String
-  user_id       String
-  status        Status
-  date_received DateTime
-  date_pickup   DateTime
-  total         BigInt
-  created_at    DateTime?     @default(now())
-  updated_at    DateTime?
-  updated_by    String?
-  deleted_at    DateTime?
-  deleted_by    String?
-  detailOrder   detailOrder[] @relation("Orders")
+  id             String          @id @default(uuid())
+  bill_no        String          @unique
+  user_id        String
+  cashier_id     String
+  status         OrderStatus     @default(RECEIVED)
+  date_received  DateTime
+  date_pickup    DateTime
+  is_paid        Boolean         @default(false)
+  payment_id     String?
+  total          BigInt
+  created_at     DateTime?       @default(now())
+  created_by     String?         @default("System")
+  updated_at     DateTime?
+  updated_by     String?
+  detailOrder    detailOrder[]   @relation("Orders")
+  pay_service_id paymentService? @relation("Order_Payment", fields: [payment_id], references: [id])
 }
 
 model detailOrder {
@@ -114,19 +135,24 @@ model detailOrder {
   quantity     Int
   total_price  BigInt
   created_at   DateTime? @default(now())
+  created_by   String?   @default("System")
   updated_at   DateTime?
   updated_by   String?
-  deleted_at   DateTime?
-  deleted_by   String?
   orders       orders    @relation("Orders", fields: [order_id], references: [id])
   item_type_id itemType  @relation("Items", fields: [item_id], references: [id])
 }
 
-enum Status {
+enum OrderStatus {
   RECEIVED
   PROCESS
   FINISH
   COMPLETED
+}
+
+enum PaymentStatus {
+  PAID
+  UNPAID
+  CANCELED
 }
 
 enum Unit {

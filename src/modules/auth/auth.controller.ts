@@ -5,7 +5,6 @@ import {
   Body,
   HttpCode,
   Param,
-  Patch,
   Query,
   UploadedFile,
   UseInterceptors,
@@ -73,11 +72,16 @@ export class AuthController {
   @Put('profile')
   @HttpCode(200)
   updateProfile(@Request() req, @Body() EditProfileDto: EditProfileDto) {
-    return this.authService.updateProfile(
-      req.user,
-      EditProfileDto,
-    );
+    return this.authService.updateProfile(req.user, EditProfileDto);
   }
+
+  // @Public()
+  // @Post('forgot/password/')
+  // @HttpCode(200)
+  // @ResponseMessage('Forgot Password SUCCEED')
+  // forgotPassword(@Body() EmailForgotPasswordDto: EmailForgotPasswordDto) {
+  //   return this.authService.forgotPassword(EmailForgotPasswordDto);
+  // }
 
   // @Public()
   // @ResponseMessage(USER_ONE_IMAGE)
@@ -107,7 +111,7 @@ export class AuthController {
   //   return this.authService.getProfile(req.user);
   // }
 
-  // @Patch('profile')
+  // @Put('profile')
   // @HttpCode(200)
   // updateProfile(@Request() req, @Body() EditProfileDto: EditProfileDto) {
   //   return this.authService.updateProfile(
@@ -115,13 +119,5 @@ export class AuthController {
   //     req.user,
   //     EditProfileDto,
   //   );
-  // }
-
-  // @Public()
-  // @Post('forgot/password/')
-  // @HttpCode(200)
-  // @ResponseMessage('Forgot Password SUCCEED')
-  // forgotPassword(@Body() EmailForgotPasswordDto: EmailForgotPasswordDto) {
-  //   return this.authService.forgotPassword(EmailForgotPasswordDto);
   // }
 }

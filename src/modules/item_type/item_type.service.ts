@@ -1,26 +1,75 @@
-import { Injectable } from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { CreateItemTypeDto } from './dto/create-item_type.dto';
 import { UpdateItemTypeDto } from './dto/update-item_type.dto';
+import { BadRequestException } from 'src/helpers/constants/custom.exceptions';
+import { ITEM_EXISTS, ITEM_NOT_FOUND } from 'src/helpers/constants/response.constants';
+import { PrismaService } from 'src/helpers/services/prisma.service';
 
 @Injectable()
 export class ItemTypeService {
-  create(createItemTypeDto: CreateItemTypeDto) {
-    return 'This action adds a new itemType';
+  constructor(private prisma: PrismaService) {}
+  async create(createItemTypeDto: CreateItemTypeDto) {
+    try {
+      return await this.prisma.$transaction([
+        this.prisma.itemType.create({
+          data: {
+            name: createItemTypeDto.name,
+            price: createItemTypeDto.price,
+            service_id: createItemTypeDto.service_id,
+          },
+        }),
+      ]);
+    } catch (err) {
+      if (err.code === 'P2002') {
+        throw new BadRequestException(ITEM_EXISTS);
+      }
+      throw new HttpException(err.message, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
   }
 
-  findAll() {
-    return `This action returns all itemType`;
+  async findAll() {
+    return await this.prisma.itemType.findMany();
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} itemType`;
+  async findOne(id: string) {
+    try {
+      return await this.prisma.itemType.findUniqueOrThrow({
+        where: { id },
+      });
+    } catch (err) {
+      if (err.code === 'P2025') {
+        throw new BadRequestException(ITEM_NOT_FOUND);
+      }
+      throw new HttpException(err.message, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
   }
 
-  update(id: number, updateItemTypeDto: UpdateItemTypeDto) {
-    return `This action updates a #${id} itemType`;
+  async update(id: string, updateItemTypeDto: UpdateItemTypeDto) {
+    try {
+      return await this.prisma.$transaction([
+        this.prisma.itemType.update({
+          where: { id },
+          data: updateItemTypeDto,
+        })
+      ])
+    } catch (err) {
+      if (err.code === 'P2025') {
+        throw new BadRequestException(ITEM_NOT_FOUND);
+      }
+      throw new HttpException(err.message, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} itemType`;
+  async remove(id: string) {
+    try {
+      return await this.prisma.$transaction([
+        this.prisma.itemType.delete({ where: { id } })
+      ])
+    } catch (err) {
+      if (err.code === 'P2025') {
+        throw new BadRequestException(ITEM_NOT_FOUND);
+      }
+      throw new HttpException(err.message, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
   }
 }

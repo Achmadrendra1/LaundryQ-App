@@ -120,6 +120,14 @@ export class AuthService {
     if (credentials.password.length < 8) {
       throw new BadRequestException(ERORR_PASSWORD_LENGTH);
     }
+    const phoneRegex = /^(^\+62|62|^8)(\d{3,4}-?){2}\d{3,4}$/;
+    if (!credentials.phone_number.match(phoneRegex)) {
+      throw new BadRequestException('Phone number is not valid');
+    }
+
+    if (credentials.phone_number[0] === '8') {
+      credentials.phone_number = '62' + credentials.phone_number;
+    }
 
     credentials.password = await bcrypt.hash(credentials.password, salt);
 
@@ -138,7 +146,7 @@ export class AuthService {
             UserProfile: {
               create: {
                 full_name: credentials.full_name,
-                phone_number: '62' + credentials.phone_number,
+                phone_number: credentials.phone_number,
                 gender: credentials.gender,
               },
             },
@@ -158,73 +166,6 @@ export class AuthService {
       throw new Error('Create failed: ' + error.message);
     }
   }
-
-  // async emailVerifyGetToken(EmailVerificationDto: EmailVerificationDto) {
-  //   try {
-  //     const updt = await this.prisma.authUser.findFirst({
-  //       where: {
-  //         verify_email_code: EmailVerificationDto.code,
-  //         email: EmailVerificationDto.email,
-  //       },
-  //     });
-
-  //     if (!updt) {
-  //       throw new BadRequestException(USER_NOT_FOUND);
-  //     }
-
-  //     if (!updt.is_verify_email) {
-  //       throw new BadRequestException(USER_NOT_ACTIVE);
-  //     }
-
-  //     const updatedUser = await this.prisma.authUser.update({
-  //       where: { id: updt.id },
-  //       data: { is_verify_email: true, verify_email_code: null },
-  //     });
-  //     return `Verification sucsess : ${updatedUser.username}`;
-  //   } catch (error) {
-  //     throw new Error('Verify failed: ' + error.message);
-  //   }
-  // }
-
-  // async forgotPassword(EmailForgotPasswordDto: EmailForgotPasswordDto) {
-  //   try {
-  //     const salt = await bcrypt.genSalt(+process.env.SALT_ROUNDS);
-  //     const usr = await this.prisma.authUser.findFirst({
-  //       where: {
-  //         email: EmailForgotPasswordDto.email,
-  //       },
-  //       include: {
-  //         UserProfile: true,
-  //       },
-  //     });
-
-  //     if (!usr) {
-  //       throw new BadRequestException(USER_NOT_FOUND);
-  //     }
-  //     var crypto = require('crypto');
-  //     var code = crypto.randomBytes(10).toString('hex');
-  //     const password = await bcrypt.hash(code, salt);
-
-  //     const updatedUser = await this.prisma.authUser.update({
-  //       where: { id: usr.id },
-  //       data: {
-  //         password: password,
-  //       },
-  //     });
-
-  //     let body: SendEmailDTO = {
-  //       subject: `Lupa Password`,
-  //       receipients: [`${usr.email}`],
-  //       name: usr.UserProfile.full_name,
-  //       message: `Kami menerima permintaan untuk reset password akun Anda. Berikut adalah password yang baru, dan jangan lupa untuk langsung riset password anda:`,
-  //       code: code,
-  //     };
-  //     const response = await this.emailService.sendEmail(body);
-  //     return `Forgot Password sucsess : ${updatedUser.username}`;
-  //   } catch (error) {
-  //     throw new Error('Verify failed: ' + error.message);
-  //   }
-  // }
 
   async verifyToken(user: any): Promise<any> {
     return user;
@@ -295,6 +236,77 @@ export class AuthService {
       full_name: EditProfileDto.full_name,
     };
   }
+
+  // async forgotPassword(EmailForgotPasswordDto: EmailForgotPasswordDto) {
+    
+  // }
+
+  // async emailVerifyGetToken(EmailVerificationDto: EmailVerificationDto) {
+  //   try {
+  //     const updt = await this.prisma.authUser.findFirst({
+  //       where: {
+  //         verify_email_code: EmailVerificationDto.code,
+  //         email: EmailVerificationDto.email,
+  //       },
+  //     });
+
+  //     if (!updt) {
+  //       throw new BadRequestException(USER_NOT_FOUND);
+  //     }
+
+  //     if (!updt.is_verify_email) {
+  //       throw new BadRequestException(USER_NOT_ACTIVE);
+  //     }
+
+  //     const updatedUser = await this.prisma.authUser.update({
+  //       where: { id: updt.id },
+  //       data: { is_verify_email: true, verify_email_code: null },
+  //     });
+  //     return `Verification sucsess : ${updatedUser.username}`;
+  //   } catch (error) {
+  //     throw new Error('Verify failed: ' + error.message);
+  //   }
+  // }
+
+  // async forgotPassword(EmailForgotPasswordDto: EmailForgotPasswordDto) {
+  //   try {
+  //     const salt = await bcrypt.genSalt(+process.env.SALT_ROUNDS);
+  //     const usr = await this.prisma.authUser.findFirst({
+  //       where: {
+  //         email: EmailForgotPasswordDto.email,
+  //       },
+  //       include: {
+  //         UserProfile: true,
+  //       },
+  //     });
+
+  //     if (!usr) {
+  //       throw new BadRequestException(USER_NOT_FOUND);
+  //     }
+  //     var crypto = require('crypto');
+  //     var code = crypto.randomBytes(10).toString('hex');
+  //     const password = await bcrypt.hash(code, salt);
+
+  //     const updatedUser = await this.prisma.authUser.update({
+  //       where: { id: usr.id },
+  //       data: {
+  //         password: password,
+  //       },
+  //     });
+
+  //     let body: SendEmailDTO = {
+  //       subject: `Lupa Password`,
+  //       receipients: [`${usr.email}`],
+  //       name: usr.UserProfile.full_name,
+  //       message: `Kami menerima permintaan untuk reset password akun Anda. Berikut adalah password yang baru, dan jangan lupa untuk langsung riset password anda:`,
+  //       code: code,
+  //     };
+  //     const response = await this.emailService.sendEmail(body);
+  //     return `Forgot Password sucsess : ${updatedUser.username}`;
+  //   } catch (error) {
+  //     throw new Error('Verify failed: ' + error.message);
+  //   }
+  // }
 
   // async getProfile(user: any): Promise<any> {
   //   let profile, role: any;
